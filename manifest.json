@@ -1,0 +1,9 @@
+
+{
+"name":"JLPT N4 PRO",
+"short_name":"JLPT N4",
+"start_url":"./index.html",
+"display":"standalone",
+"background_color":"#ffffff",
+"theme_color":"#ffffff"
+}

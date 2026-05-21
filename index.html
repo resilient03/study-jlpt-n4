@@ -1,0 +1,233 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JLPT N4 PRO</title>
+<link rel="manifest" href="manifest.json">
+<style>
+body{
+font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+background:#f5f5f7;
+margin:0;
+padding:0;
+display:flex;
+justify-content:center;
+align-items:center;
+min-height:100vh;
+}
+.container{
+width:92%;
+max-width:430px;
+background:white;
+padding:24px;
+border-radius:24px;
+box-shadow:0 8px 30px rgba(0,0,0,0.08);
+}
+.title{
+font-size:18px;
+color:#666;
+text-align:center;
+margin-bottom:12px;
+}
+.word{
+font-size:48px;
+font-weight:700;
+text-align:center;
+margin-top:14px;
+}
+.reading{
+font-size:20px;
+text-align:center;
+margin-top:30px;
+color:#888;
+display:none;
+}
+.meaning{
+font-size:24px;
+text-align:center;
+margin-top:14px;
+display:none;
+}
+.controls{
+display:flex;
+justify-content:center;
+flex-wrap:wrap;
+margin-top:22px;
+}
+button{
+border:none;
+border-radius:16px;
+padding:14px 18px;
+margin:6px;
+font-size:16px;
+cursor:pointer;
+}
+.gray{background:#efefef;}
+.known{background:#d8f7d8;}
+.vague{background:#fff0b3;}
+.unknown{background:#ffd7d7;}
+.status{
+display:flex;
+flex-direction:column;
+margin-top:20px;
+}
+.progress{
+margin-top:18px;
+text-align:center;
+color:#777;
+}
+.stats{
+margin-top:10px;
+font-size:14px;
+text-align:center;
+color:#888;
+}
+.dark{
+background:#111;
+color:white;
+}
+.dark .container{
+background:#1c1c1e;
+}
+.dark .gray{
+background:#333;
+color:white;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="title">JLPT N4 암기 앱</div>
+
+<div class="reading" id="reading"></div>
+<div class="word" id="word"></div>
+<div class="meaning" id="meaning"></div>
+
+<div class="controls">
+<button class="gray" onclick="toggleMeaning()">한국어</button>
+<button class="gray" onclick="toggleReading()">발음</button>
+<button class="gray" onclick="speak()">🔊 듣기</button>
+<button class="gray" onclick="toggleDark()">🌙</button>
+</div>
+
+<div class="status">
+<button class="known" onclick="mark('known')">😀 알겠음</button>
+<button class="vague" onclick="mark('vague')">😐 모호함</button>
+<button class="unknown" onclick="mark('unknown')">😵 모르겠음</button>
+</div>
+
+<div class="progress" id="progress"></div>
+<div class="stats" id="stats"></div>
+</div>
+
+<script src="words.js"></script>
+<script>
+let queue = [...words];
+shuffle(queue);
+
+let current = null;
+let known = 0;
+let vague = 0;
+let unknown = 0;
+
+function shuffle(arr){
+for(let i=arr.length-1;i>0;i--){
+const j=Math.floor(Math.random()*(i+1));
+[arr[i],arr[j]]=[arr[j],arr[i]];
+}
+}
+
+function nextCard(){
+if(queue.length===0){
+alert("오늘 학습 완료!");
+return;
+}
+
+current=queue.shift();
+
+document.getElementById("word").innerText=current.word;
+document.getElementById("reading").innerText=current.reading;
+document.getElementById("meaning").innerText=current.meaning;
+
+document.getElementById("reading").style.display="none";
+document.getElementById("meaning").style.display="none";
+
+updateStats();
+}
+
+function updateStats(){
+document.getElementById("progress").innerText=
+"남은 카드: "+queue.length;
+
+document.getElementById("stats").innerText=
+`😀 ${known} / 😐 ${vague} / 😵 ${unknown}`;
+}
+
+function toggleMeaning(){
+const el=document.getElementById("meaning");
+el.style.display=el.style.display==="none"?"block":"none";
+}
+
+function toggleReading(){
+const el=document.getElementById("reading");
+el.style.display=el.style.display==="none"?"block":"none";
+}
+
+function speak(){
+const utterance=new SpeechSynthesisUtterance(current.word);
+utterance.lang="ja-JP";
+speechSynthesis.speak(utterance);
+}
+
+function mark(status){
+
+if(status==="known"){
+known++;
+}
+
+if(status==="vague"){
+vague++;
+queue.splice(Math.min(5,queue.length),0,current);
+}
+
+if(status==="unknown"){
+unknown++;
+queue.splice(Math.min(2,queue.length),0,current);
+queue.push(current);
+}
+
+saveProgress();
+nextCard();
+}
+
+function saveProgress(){
+localStorage.setItem("jlpt_stats",JSON.stringify({
+known,vague,unknown
+}));
+}
+
+function loadProgress(){
+const data=localStorage.getItem("jlpt_stats");
+if(data){
+const parsed=JSON.parse(data);
+known=parsed.known||0;
+vague=parsed.vague||0;
+unknown=parsed.unknown||0;
+}
+}
+
+function toggleDark(){
+document.body.classList.toggle("dark");
+}
+
+loadProgress();
+nextCard();
+
+if('serviceWorker' in navigator){
+navigator.serviceWorker.register('sw.js');
+}
+</script>
+</body>
+</html>
